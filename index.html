@@ -113,6 +113,93 @@
 
         createPhoto1();
 
+        /***********Key data for Player***************/
+        var inputMap = {};
+        scene.actionManager = new BABYLON.ActionManager(scene);
+        scene.actionManager.registerAction(
+          new BABYLON.ExecuteCodeAction(
+            BABYLON.ActionManager.OnKeyDownTrigger,
+            function (evt) {
+              inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+            }
+          )
+        );
+        scene.actionManager.registerAction(
+          new BABYLON.ExecuteCodeAction(
+            BABYLON.ActionManager.OnKeyUpTrigger,
+            function (evt) {
+              inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+            }
+          )
+        );
+
+        const player = BABYLON.SceneLoader.ImportMesh(
+          "",
+          "./scenes/",
+          "dummy3.babylon",
+          scene,
+          function (newMeshes, particleSystems, skeletons) {
+            try {
+              var skeleton = skeletons[0];
+              skeleton.animationPropertiesOverride =
+                new BABYLON.AnimationPropertiesOverride();
+              skeleton.animationPropertiesOverride.enableBlending = true;
+              skeleton.animationPropertiesOverride.blendingSpeed = 0.05;
+              skeleton.animationPropertiesOverride.loopMode = 1;
+
+              var idleRange = skeleton.getAnimationRange("YBot_Idle");
+              var walkRange = skeleton.getAnimationRange("YBot_Walk");
+              var runRange = skeleton.getAnimationRange("YBot_Run");
+              var leftRange = skeleton.getAnimationRange("YBot_LeftStrafeWalk");
+              var rightRange = skeleton.getAnimationRange(
+                "YBot_RightStrafeWalk"
+              );
+              var animating = false;
+
+              // Game/Render loop
+              scene.onBeforeRenderObservable.add(() => {
+                var keydown = false;
+                if (inputMap["w"] || inputMap["ArrowUp"]) {
+                  newMeshes[0].position.z += 0.1;
+                  newMeshes[0].rotation.y = 0;
+                  keydown = true;
+                }
+                if (inputMap["a"] || inputMap["ArrowLeft"]) {
+                  newMeshes[0].position.x -= 0.1;
+                  newMeshes[0].rotation.y = (3 * Math.PI) / 2;
+                  keydown = true;
+                }
+                if (inputMap["s"] || inputMap["ArrowDown"]) {
+                  newMeshes[0].position.z -= 0.1;
+                  newMeshes[0].rotation.y = (2 * Math.PI) / 2;
+                  keydown = true;
+                }
+                if (inputMap["d"] || inputMap["ArrowRight"]) {
+                  newMeshes[0].position.x += 0.1;
+                  newMeshes[0].rotation.y = Math.PI / 2;
+                  keydown = true;
+                }
+                if (keydown) {
+                  if (!animating) {
+                    animating = true;
+                    scene.beginAnimation(
+                      skeleton,
+                      walkRange.from,
+                      walkRange.to,
+                      true
+                    );
+                  }
+                } else {
+                  animating = false;
+                  scene.stopAnimation(skeleton);
+                }
+              });
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        );
+
         return scene;
       };
 
